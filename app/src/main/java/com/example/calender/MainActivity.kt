@@ -1,5 +1,6 @@
 package com.example.calender
 
+import CalendarViewModel
 import android.os.Build
 import android.os.Bundle
 
@@ -60,24 +61,29 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CalenderTheme {
-                CalendarScreen()
+                val viewModel: CalendarViewModel = CalendarViewModel()
+                CalendarScreen(viewModel)
             }
         }
     }
 }
 
 @Composable
-fun CalendarScreen() {
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+fun CalendarScreen(viewModel: CalendarViewModel) {
+    val selectedDate by viewModel.selectedDate.collectAsState()
+    val tasksForSelectedDate by viewModel.tasksForSelectedDate.collectAsState()
+    val calendarGridInfo by viewModel.calendarGridInfo.collectAsState()
+
     var showTaskDialog by remember { mutableStateOf(false) }
     var taskTitle by remember { mutableStateOf("") }
-    val tasks = remember { mutableStateListOf<Task>() }
+
 
     Column(
         modifier = Modifier
@@ -91,7 +97,7 @@ fun CalendarScreen() {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            IconButton(onClick = { selectedDate = selectedDate.minusMonths(1) }) {
+            IconButton(onClick = { viewModel.navigateToPreviousMonth() }) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
             }
             Text(
@@ -99,7 +105,7 @@ fun CalendarScreen() {
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { selectedDate = selectedDate.plusMonths(1) }) {
+            IconButton(onClick = { viewModel.navigateToNextMonth() }) {
                 Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
             }
         }
@@ -125,19 +131,16 @@ fun CalendarScreen() {
             columns = GridCells.Fixed(7),
             modifier = Modifier.fillMaxWidth()
         ) {
-            val daysInMonth = selectedDate.lengthOfMonth()
-            val firstDayOfWeek = selectedDate.withDayOfMonth(1).dayOfWeek.value
-            val totalCells = if (firstDayOfWeek == 7) daysInMonth else daysInMonth + firstDayOfWeek - 1
 
-            items(totalCells) { index ->
-                if (index < firstDayOfWeek - 1) {
+            items(calendarGridInfo.totalCells) { index ->
+                if (index < calendarGridInfo.firstDayOfWeek - 1) {
                     // Empty cell for alignment
                     Spacer(modifier = Modifier.size(40.dp))
                 } else {
-                    val day = index - firstDayOfWeek + 2
+                    val day = index - calendarGridInfo.firstDayOfWeek + 2
                     val date = selectedDate.withDayOfMonth(day)
                     val isSelected = date == selectedDate
-                    val tasksByDate = tasks.filter { it.date == date }
+                    val taskCount = viewModel.tasks.value.count { it.date == date }
 
                     Box(
                         modifier = Modifier
@@ -146,14 +149,14 @@ fun CalendarScreen() {
                                 if (isSelected) Color.Blue.copy(alpha = 0.2f) else Color.Transparent,
                                 shape = CircleShape
                             )
-                            .clickable { selectedDate = date },
+                            .clickable { viewModel.selectDate(date) },
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = day.toString())
-                            if (tasksByDate.isNotEmpty()) {
+                            if (taskCount > 0) {
                                 Text(
-                                    text = "${tasksByDate.size}",
+                                    text = "${taskCount}",
                                     fontSize = 12.sp,
                                     color = Color.Gray
                                 )
@@ -183,8 +186,8 @@ fun CalendarScreen() {
         )
 
         LazyColumn {
-            items(tasks.filter { it.date == selectedDate }, key = { item -> item }) { task ->
-                TaskItem(task = task, onDelete = { tasks.remove(task) })
+            items(tasksForSelectedDate, key = { it.hashCode() }) { task ->
+                TaskItem(task = task, onDelete = { viewModel.deleteTask(task) })
             }
         }
     }
@@ -210,7 +213,7 @@ fun CalendarScreen() {
             confirmButton = {
                 Button(
                     onClick = {
-                        tasks.add(Task(title = taskTitle, date = selectedDate))
+                        viewModel.addTask(taskTitle)
                         taskTitle = ""
                         showTaskDialog = false
                     }
