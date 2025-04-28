@@ -71,5 +71,9 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.56.1")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-
+    testImplementation ("junit:junit:4.13.2")
+    testImplementation ("org.mockito:mockito-core:4.5.1")
+    testImplementation ("org.mockito.kotlin:mockito-kotlin:4.0.0")
+    testImplementation ("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+    testImplementation ("androidx.arch.core:core-testing:2.1.0")
 }

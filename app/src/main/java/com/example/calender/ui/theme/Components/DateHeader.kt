@@ -18,7 +18,7 @@ import org.threeten.bp.LocalDate
 
 
 @Composable
-fun DateHeader(
+fun MonthHeader(
     selectedDate: LocalDate,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit

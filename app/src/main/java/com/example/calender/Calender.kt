@@ -8,6 +8,6 @@ import dagger.hilt.android.HiltAndroidApp
 class Calender: Application() {
     override fun onCreate() {
         super.onCreate()
-        AndroidThreeTen.init(this) // Initialize ThreeTenABP
+        AndroidThreeTen.init(this)
     }
 }

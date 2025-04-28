@@ -14,7 +14,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 object DependacyProvider {
 
     val logging = HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
-
     val client = OkHttpClient.Builder()
         .addInterceptor(logging)
         .build()

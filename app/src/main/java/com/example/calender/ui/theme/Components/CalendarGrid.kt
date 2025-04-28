@@ -4,15 +4,18 @@ import CalendarGridInfo
 import TaskModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -94,14 +97,26 @@ fun WeekdayHeader(
     modifier: Modifier = Modifier,
     daysOfWeek: List<String> = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 ) {
-    Row(modifier = modifier.fillMaxWidth()) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = Color(0xFFDED9D9),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
         daysOfWeek.forEach { day ->
             Text(
                 text = day,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 4.dp),
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = Color(0xFF333333)
             )
         }
     }

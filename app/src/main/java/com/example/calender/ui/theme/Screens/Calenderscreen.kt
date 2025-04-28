@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import com.example.calender.DateHeader
+import com.example.calender.MonthHeader
 import com.example.calender.TaskDialog
 import com.example.calender.ui.theme.Components.CalendarGrid
 import com.example.calender.ui.theme.Components.TaskItem
@@ -46,7 +46,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
             .padding(16.dp)
     ) {
         Spacer(modifier = Modifier.height(12.dp))
-        DateHeader(
+        MonthHeader (
             selectedDate = selectedDate,
             onPreviousMonth = { viewModel.navigateToPreviousMonth() },
             onNextMonth = { viewModel.navigateToNextMonth() }

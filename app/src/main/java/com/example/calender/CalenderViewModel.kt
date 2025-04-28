@@ -11,9 +11,6 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    private val _tasks = MutableStateFlow<List<TaskModel>>(emptyList())
-    val tasks: StateFlow<List<TaskModel>> = _tasks.asStateFlow()
-
     private val _calendarTasks = MutableStateFlow<List<TaskModel>>(emptyList())
     val calendarTasks: StateFlow<List<TaskModel>> = _calendarTasks.asStateFlow()
 
@@ -26,7 +23,37 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
     private val _showAllTasks = MutableStateFlow(true)
     val showAllTasks: StateFlow<Boolean> = _showAllTasks
 
+    private val _tasks = MutableStateFlow<List<TaskModel>>(emptyList())
+    val tasks: StateFlow<List<TaskModel>> = _tasks.asStateFlow()
+
 //    val isConnectedToNetwork: StateFlow<Boolean> = connectivityMonitor.isConnected
+
+    val tasksForSelectedDate: StateFlow<List<TaskModel>> =
+        combine(_selectedDate, _tasks) { date, tasks ->
+            tasks.filter { it.taskDetail.taskDate == date }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(500),
+            initialValue = emptyList()
+        )
+
+
+    val calendarGridInfo: StateFlow<CalendarGridInfo> =
+        _selectedDate.map { date ->
+            val daysInMonth = date.lengthOfMonth()
+            val firstDayOfWeek = date.withDayOfMonth(1).dayOfWeek.value
+            val totalCells = if (firstDayOfWeek == 7) daysInMonth else daysInMonth + firstDayOfWeek - 1
+
+            CalendarGridInfo(
+                daysInMonth = daysInMonth,
+                firstDayOfWeek = firstDayOfWeek,
+                totalCells = totalCells
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = CalendarGridInfo()
+        )
 
     init {
         loadTasks()
@@ -36,19 +63,15 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-               repository.getTasks().collect { taskList ->
-                   _calendarTasks.value = taskList
-               }
+                repository.getTasks().collect { taskList ->
+                    _calendarTasks.value = taskList
+                }
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
             }
         }
-    }
-
-    fun toggleTaskDisplay() {
-        _showAllTasks.value = !_showAllTasks.value
     }
 
     fun addTasks(title: String, description: String) {
@@ -76,31 +99,23 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
         }
     }
 
-    val tasksForSelectedDate: StateFlow<List<TaskModel>> =
-        combine(_selectedDate, _tasks) { date, tasks ->
-            tasks.filter { it.taskDetail.taskDate == date }
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(500),
-            initialValue = emptyList()
-        )
+    fun deleteTask(task: TaskModel) {
+        viewModelScope.launch {
+            try {
+                task.taskId?.let { repository.deleteTask(it) }
+                _tasks.update { currentTasks ->
+                    currentTasks.filterNot { it.taskDetail.title == task.taskDetail.title }
+                }
+                loadTasks()
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
+    }
 
-    val calendarGridInfo: StateFlow<CalendarGridInfo> =
-        _selectedDate.map { date ->
-            val daysInMonth = date.lengthOfMonth()
-            val firstDayOfWeek = date.withDayOfMonth(1).dayOfWeek.value
-            val totalCells = if (firstDayOfWeek == 7) daysInMonth else daysInMonth + firstDayOfWeek - 1
-
-            CalendarGridInfo(
-                daysInMonth = daysInMonth,
-                firstDayOfWeek = firstDayOfWeek,
-                totalCells = totalCells
-            )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CalendarGridInfo()
-        )
+    fun toggleTaskDisplay() {
+        _showAllTasks.value = !_showAllTasks.value
+    }
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
@@ -115,24 +130,10 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
         Log.d("Month", "Next Previos")
         _selectedDate.update { it.plusMonths(1) }
     }
-
-    fun deleteTask(task: TaskModel) {
-        viewModelScope.launch {
-            try {
-                task.taskId?.let { repository.deleteTask(it) }
-                _tasks.update { currentTasks ->
-                    currentTasks.filterNot { it.taskDetail.title == task.taskDetail.title }
-                }
-                loadTasks()
-            } catch (e: Exception) {
-                _error.value = e.message
-            }
-        }
-    }
 }
 
 data class CalendarGridInfo(
     val daysInMonth: Int = 0,
-    val firstDayOfWeek: Int = 1, // Monday
+    val firstDayOfWeek: Int = 1,
     val totalCells: Int = 0
 )
