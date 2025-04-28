@@ -1,27 +1,30 @@
+
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.calender.API.CalendarRepository
-import com.example.calender.API.CalenderService
-//import com.example.calender.API.CalendarRepository
-import com.example.calender.Task
-//import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalDate
-//import javax.inject.Inject
 
 class CalendarViewModel(private val repository: CalendarRepository) : ViewModel() {
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    private val _tasks = MutableStateFlow<List<Task>>(emptyList())
-    val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
+    private val _tasks = MutableStateFlow<List<TaskModel>>(emptyList())
+    val tasks: StateFlow<List<TaskModel>> = _tasks.asStateFlow()
+
+    private val _calendarTasks = MutableStateFlow<List<TaskModel>>(emptyList())
+    val calendarTasks: StateFlow<List<TaskModel>> = _calendarTasks.asStateFlow()
 
     private val _isLoading = MutableStateFlow<Boolean>(false)
     val isLoading: StateFlow<Boolean> get() = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    private val _showAllTasks = MutableStateFlow(true)
+    val showAllTasks: StateFlow<Boolean> = _showAllTasks
 
 //    val isConnectedToNetwork: StateFlow<Boolean> = connectivityMonitor.isConnected
 
@@ -34,7 +37,7 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
             _isLoading.value = true
             try {
                repository.getTasks().collect { taskList ->
-                   _tasks.value = taskList
+                   _calendarTasks.value = taskList
                }
             } catch (e: Exception) {
                 _error.value = e.message
@@ -44,12 +47,26 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
         }
     }
 
-    fun addTasks(title: String) {
+    fun toggleTaskDisplay() {
+        _showAllTasks.value = !_showAllTasks.value
+    }
+
+    fun addTasks(title: String, description: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val task = Task(title = title, date = _selectedDate.value);
+                val task = TaskDetail(title = title, description = description);
                 repository.addTask(task);
+                _tasks.update { currentTasks ->
+                    currentTasks + TaskModel(
+                        taskId = null,
+                        TaskDetail(
+                            title = title,
+                            description = description,
+                            taskDate = selectedDate.value
+                        )
+                    )
+                }
                 loadTasks()
             } catch (e: Exception){
                 _error.value = e.message
@@ -59,9 +76,9 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
         }
     }
 
-    val tasksForSelectedDate: StateFlow<List<Task>> =
+    val tasksForSelectedDate: StateFlow<List<TaskModel>> =
         combine(_selectedDate, _tasks) { date, tasks ->
-            tasks.filter { it.date == date }
+            tasks.filter { it.taskDetail.taskDate == date }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(500),
@@ -90,28 +107,26 @@ class CalendarViewModel(private val repository: CalendarRepository) : ViewModel(
     }
 
     fun navigateToPreviousMonth() {
+        Log.d("Month", "Previos")
         _selectedDate.update { it.minusMonths(1) }
     }
 
     fun navigateToNextMonth() {
+        Log.d("Month", "Next Previos")
         _selectedDate.update { it.plusMonths(1) }
     }
 
-    fun addTask(title: String) {
-        _tasks.update { currentTasks ->
-            currentTasks + Task(
-                title = title,
-                date = _selectedDate.value
-            )
-        }
-    }
-
-    fun deleteTask(task: Task) {
-//        viewModelScope.launch {
-//            repository.deleteTask(1)
-//        }
-        _tasks.update { currentTasks ->
-            currentTasks.filterNot { it == task }
+    fun deleteTask(task: TaskModel) {
+        viewModelScope.launch {
+            try {
+                task.taskId?.let { repository.deleteTask(it) }
+                _tasks.update { currentTasks ->
+                    currentTasks.filterNot { it.taskDetail.title == task.taskDetail.title }
+                }
+                loadTasks()
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
         }
     }
 }

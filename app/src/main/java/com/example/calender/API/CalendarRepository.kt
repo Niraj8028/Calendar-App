@@ -1,18 +1,18 @@
 package com.example.calender.API
 
 import DeleteTaskRequest
+import TaskDetail
 import TaskListRequest
 import TaskModel
 import TaskRequest
-import com.example.calender.Task
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import javax.inject.Inject
 
 class CalendarRepository (
     private val apiService: CalenderService)  {
 
-     suspend fun getTasks(): Flow<List<Task>> = flow {
+     fun getTasks(): Flow<List<TaskModel>> = flow {
         try {
             val response = apiService.getTasks(TaskListRequest(123))
             if (response.isSuccessful) {
@@ -25,8 +25,9 @@ class CalendarRepository (
         }
     }
 
-    suspend fun addTask(task: Task) {
+    suspend fun addTask(task: TaskDetail) {
         val response = apiService.storeTask(TaskRequest(123, task))
+        Log.d("Response", response.body().toString())
         if (!response.isSuccessful) {
             throw Exception("Failed to add task: ${response.code()}")
         }
@@ -34,6 +35,7 @@ class CalendarRepository (
 
      suspend fun deleteTask(taskId: Int) {
         val response = apiService.deleteTask(DeleteTaskRequest(123, taskId))
+         Log.d("Response", response.toString());
         if (!response.isSuccessful) {
             throw Exception("Failed to delete task: ${response.code()}")
         }

@@ -1,16 +1,21 @@
-import com.example.calender.Task
 import com.google.gson.annotations.SerializedName
+import org.threeten.bp.LocalDate
 import java.time.format.DateTimeFormatter
 
 data class TaskModel(
-    @SerializedName("task_id") val id: Int = 0,
-    @SerializedName("title") val title: String,
-    @SerializedName("date") private val date: String,
+    @SerializedName("task_id") val taskId: Int? = null,
+    @SerializedName("task_detail") val taskDetail: TaskDetail
+)
+
+data class TaskDetail(
+    val title: String,
+    val description: String? = null,
+    val taskDate: LocalDate? = null
 )
 
 data class TaskRequest(
     @SerializedName("user_id") val userId: Int,
-    @SerializedName("task") val task: Task
+    @SerializedName("task") val task: TaskDetail
 )
 
 data class TaskListRequest(
@@ -22,6 +27,6 @@ data class DeleteTaskRequest(
     @SerializedName("task_id") val taskId: Int
 )
 
-data class TaskListResponse(
-    @SerializedName("task_details") val tasks: List<Task>
+data class TaskResponse(
+    val tasks: List<TaskModel>
 )
