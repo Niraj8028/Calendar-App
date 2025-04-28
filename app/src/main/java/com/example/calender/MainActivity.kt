@@ -1,7 +1,6 @@
 package com.example.calender
 
 import CalendarViewModel
-import android.os.Build
 import android.os.Bundle
 
 import androidx.activity.ComponentActivity
@@ -57,18 +56,27 @@ import com.example.calender.ui.theme.CalenderTheme
 import org.threeten.bp.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.ViewModel
+import com.example.calender.DI.DependacyProvider
+//import androidx.compose.runtime.snapshots.SnapshotStateList
+//import androidx.hilt.navigation.compose.hiltViewModel
+//import androidx.lifecycle.ViewModel
+//import com.example.calender.API.CalenderService
+import dagger.hilt.android.AndroidEntryPoint
+//import javax.inject.Inject
 
 
-
+//@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val viewModel by lazy {
+        DependacyProvider.provideCalendarViewModel(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             CalenderTheme {
-                val viewModel: CalendarViewModel = CalendarViewModel()
                 CalendarScreen(viewModel)
             }
         }
@@ -140,8 +148,8 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                     val day = index - calendarGridInfo.firstDayOfWeek + 2
                     val date = selectedDate.withDayOfMonth(day)
                     val isSelected = date == selectedDate
-                    val taskCount = viewModel.tasks.value.count { it.date == date }
-
+//                    val taskCount = viewModel.tasks.value.count { it.date == date }
+                    val taskCount = viewModel.tasksForSelectedDate.value.count{it.date == date}
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -158,7 +166,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                                 Text(
                                     text = "${taskCount}",
                                     fontSize = 12.sp,
-                                    color = Color.Gray
+                                    color = Color.Black
                                 )
                             }
                         }
